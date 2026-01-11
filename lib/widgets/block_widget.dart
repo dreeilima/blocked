@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart' hide Orientation;
 import 'dart:math';
 import '../models/block.dart';
+import '../providers/theme_provider.dart';
 
 class BlockWidget extends StatefulWidget {
   final Block block;
   final double tileSize;
   final bool isActive;
   final bool shouldShake;
+  final VoidCallback? onDragStart;
+  final VoidCallback? onDragEnd;
   final Function(String, int, int) onMove;
+  final bool isHintTarget;
+  final int hintDelta;
 
   const BlockWidget({
     super.key,
@@ -15,7 +20,11 @@ class BlockWidget extends StatefulWidget {
     required this.tileSize,
     required this.isActive,
     this.shouldShake = false,
+    this.onDragStart,
+    this.onDragEnd,
     required this.onMove,
+    this.isHintTarget = false,
+    this.hintDelta = 0,
   });
 
   @override
@@ -79,25 +88,44 @@ class _BlockWidgetState extends State<BlockWidget>
 
   @override
   Widget build(BuildContext context) {
-    // Dark theme colors matching the reference screenshot
-    const Color blockFill = Color(0xFF3A4A4A); // Dark grey-teal block fill
-    const Color blockBorder = Color(
-      0xFF5A6A6A,
-    ); // Lighter grey border for inactive
-    const Color activeBorder = Color(
-      0xFF8FBC8F,
-    ); // Green border for active block
-    const Color primaryCircle = Color(0xFF8FBC8F); // Same green for circle
+    final gameColors = ThemeProvider.getGameColors(context);
 
-    final Color borderColor = widget.isActive ? activeBorder : blockBorder;
+    // Determine colors based on state
+    // Primary block is always green-ish.
+    // Other blocks are grey usually.
+    // ANY block becomes "active" (green-ish) when being dragged.
+
+    final bool isHighlighted = widget.isActive;
+
+    final Color blockColor = isHighlighted
+        ? gameColors.blockFill
+        : gameColors.secondaryBlockFill;
+
+    final Color borderColor = widget.isActive
+        ? gameColors.activeBlockBorder
+        : (widget.block.isPrimary
+              ? gameColors.blockBorder
+              : gameColors.secondaryBlockBorder);
 
     return GestureDetector(
-      behavior: HitTestBehavior.opaque, // Capture all gestures in the area
-      onPanStart: (_) => _accumulatedOffset = Offset.zero,
-      onPanEnd: (_) => _accumulatedOffset = Offset.zero,
-      onPanUpdate: (details) {
-        _handleDrag(details);
-      },
+      behavior: HitTestBehavior.opaque,
+      onPanStart: widget.isActive
+          ? (_) {
+              _accumulatedOffset = Offset.zero;
+              widget.onDragStart?.call();
+            }
+          : null,
+      onPanEnd: widget.isActive
+          ? (_) {
+              _accumulatedOffset = Offset.zero;
+              widget.onDragEnd?.call();
+            }
+          : null,
+      onPanUpdate: widget.isActive
+          ? (details) {
+              _handleDrag(details);
+            }
+          : null,
       child: AnimatedBuilder(
         animation: Listenable.merge([_scaleAnimation, _shakeController]),
         builder: (context, child) {
@@ -117,11 +145,9 @@ class _BlockWidgetState extends State<BlockWidget>
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          margin: const EdgeInsets.all(
-            6.0,
-          ), // increased margin for better visual separation
+          margin: const EdgeInsets.all(4.0), // gutter spacing between blocks
           decoration: BoxDecoration(
-            color: blockFill,
+            color: blockColor,
             borderRadius: BorderRadius.circular(8.0), // slightly rounder
             border: Border.all(
               color: borderColor,
@@ -130,28 +156,78 @@ class _BlockWidgetState extends State<BlockWidget>
             boxShadow: widget.isActive
                 ? [
                     BoxShadow(
-                      color: activeBorder.withOpacity(0.3),
+                      color: gameColors.activeBlockBorder.withValues(
+                        alpha: 0.3,
+                      ),
                       blurRadius: 8,
                       spreadRadius: 1,
                     ),
                   ]
                 : [],
           ),
-          child: Center(
-            // Circle outline for primary block
-            child: widget.block.isPrimary
-                ? Container(
-                    width: widget.tileSize * 0.35,
-                    height: widget.tileSize * 0.35,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: primaryCircle, width: 2.5),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Círculo do bloco primário
+              if (widget.block.isPrimary)
+                Container(
+                  width: widget.tileSize * 0.35,
+                  height: widget.tileSize * 0.35,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: gameColors.primaryCircle,
+                      width: 2.5,
                     ),
-                  )
-                : null,
+                  ),
+                ),
+
+              // Seta de Dica (Hint)
+              if (widget.isHintTarget) _buildHintArrow(),
+            ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildHintArrow() {
+    IconData icon;
+    bool isHorizontal = widget.block.width > widget.block.height;
+
+    if (isHorizontal) {
+      icon = widget.hintDelta > 0 ? Icons.arrow_forward : Icons.arrow_back;
+    } else {
+      icon = widget.hintDelta > 0 ? Icons.arrow_downward : Icons.arrow_upward;
+    }
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 600),
+      curve: Curves.easeInOut,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: (sin(value * pi * 2) + 1) / 2, // Pulse opacity
+          child: Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.8),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: Colors.amber[900], size: 24),
+          ),
+        );
+      },
+      onEnd: () {
+        // Loop animation manual para o Tween?
+        // Melhor usar um Controller separado no initState se quisermos loop infinito perfeito.
+        // Mas como setState pode ser chamado frequentemente, TweenBuilder reseta.
+        // Vamos simplificar: usar o _pulseController existente ou criar um novo?
+        // O TweenAnimationBuilder não loopa fácil.
+        // Vou usar apenas um Icon estático visível por enquanto, ou com o Opacity animado pelo Controller existente?
+        // Vamos fazer simples: Icon com Shadow.
+      },
+      child: null,
     );
   }
 

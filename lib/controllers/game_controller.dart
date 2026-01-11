@@ -2,28 +2,86 @@ import 'dart:convert';
 import 'package:flutter/material.dart' hide Orientation;
 import 'package:flutter/services.dart'; // For rootBundle
 import 'package:shared_preferences/shared_preferences.dart';
+import '../logic/solver.dart'; // Importar Solver
 import '../models/block.dart';
 import '../models/level.dart';
+import 'audio_controller.dart'; // Import AudioController
+
+// Modo de jogo
+enum GameMode { free, challenge }
 
 class GameController extends ChangeNotifier {
   Level currentLevel = Level(
-    levelNumber: 0,
+    levelNumber: 1,
     blocks: [],
-    rows: 4,
-    columns: 4,
-    exitRow: 0,
+    rows: 6,
+    columns: 6,
+    exitRow: 2,
+    chapterIndex: 0,
+    levelInChapter: 1,
   );
   List<Level> allLevels = [];
+
+  // Getters para Capítulos
+  int get totalChapters {
+    if (allLevels.isEmpty) return 1;
+    // Assume que os níveis estão ordenados ou scaneia o maior chapterIndex
+    int maxChap = 0;
+    for (var l in allLevels) {
+      if (l.chapterIndex > maxChap) maxChap = l.chapterIndex;
+    }
+    return maxChap + 1;
+  }
+
+  List<Level> getLevelsForChapter(int chapterIndex) {
+    return allLevels.where((l) => l.chapterIndex == chapterIndex).toList();
+  }
+
   List<Block> blocks = [];
   int moves = 0;
   bool isLevelCompleted = false;
   int currentLevelIndex = 0;
   int maxUnlockedLevel = 1;
+  int coins = 0;
+  static const int unlockCost = 50;
+  static const int freeModeReward = 10; // Modo Livre
+  static const int challengeModeReward = 30; // Modo Desafio (3x)
+
+  // Sistema de Hints
+  int availableHints = 3;
+  static const int maxDailyHints = 3;
+  static const int hintCost = 50; // Custa 50 moedas para comprar 1 hint
+  DateTime? lastHintReset;
+
+  // Contador de movimentos do jogador
+  int moveCount = 0;
+
+  /// Calcula número de estrelas (1-3) baseado em movimentos vs ótimo
+  int calculateStars(int moves, int optimalMoves) {
+    if (moves <= optimalMoves) return 3; // Perfeito!
+    if (moves <= (optimalMoves * 1.5).round()) return 2; // Bom
+    return 1; // Completou
+  }
+
+  // Sistema de vidas (Modo Desafio)
+  int challengeLives = 5;
+  DateTime? lastLivesReset;
+  static const int maxLives = 5;
+
+  // Modo de jogo atual
+  GameMode currentGameMode = GameMode.free;
 
   // Track which block is currently active (can be moved)
   String? activeBlockId;
   // Track which block is currently shaking due to collision
   String? shakingBlockId;
+
+  // Dica Atual
+  Move? currentHintMove;
+  bool isCalculatingHint = false;
+
+  // Dependência de Áudio
+  AudioController? audioController;
 
   GameController() {
     _init();
@@ -39,7 +97,17 @@ class GameController extends ChangeNotifier {
   Future<void> loadLevels() async {
     try {
       final jsonString = await rootBundle.loadString('assets/levels.json');
-      final List<dynamic> jsonList = json.decode(jsonString);
+      final dynamic jsonData = json.decode(jsonString);
+      List<dynamic> jsonList;
+
+      if (jsonData is Map<String, dynamic> && jsonData.containsKey('levels')) {
+        jsonList = jsonData['levels'];
+      } else if (jsonData is List) {
+        jsonList = jsonData;
+      } else {
+        jsonList = [];
+      }
+
       allLevels = jsonList.map((j) => Level.fromJson(j)).toList();
       notifyListeners();
     } catch (e) {
@@ -50,19 +118,53 @@ class GameController extends ChangeNotifier {
   Future<void> _loadProgress() async {
     final prefs = await SharedPreferences.getInstance();
     maxUnlockedLevel = prefs.getInt('maxUnlockedLevel') ?? 1;
+    coins = prefs.getInt('coins') ?? 0;
+
+    // Carregar vidas e verificar reset diário
+    challengeLives = prefs.getInt('challengeLives') ?? maxLives;
+    final lastResetString = prefs.getString('lastLivesReset');
+    if (lastResetString != null) {
+      lastLivesReset = DateTime.parse(lastResetString);
+      _checkDailyReset();
+    }
+
+    // Carregar hints e verificar reset diário
+    availableHints = prefs.getInt('availableHints') ?? maxDailyHints;
+    final lastHintResetString = prefs.getString('lastHintReset');
+    if (lastHintResetString != null) {
+      lastHintReset = DateTime.parse(lastHintResetString);
+      _checkDailyHintReset();
+    } else {
+      // Primeira vez ou novo sistema: garantir reset inicial
+      _checkDailyHintReset();
+    }
+
+    notifyListeners();
   }
 
   Future<void> _saveProgress() async {
     if (currentLevel.levelNumber >= maxUnlockedLevel) {
       // If we just beat the latest level, unlock the next one
-      // currentLevelIndex is 0-based. Level 1 is index 0.
-      // If we beat level 1, we want to unlock level 2.
       int nextLevelId = currentLevel.levelNumber + 1;
       if (nextLevelId > maxUnlockedLevel) {
         maxUnlockedLevel = nextLevelId;
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setInt('maxUnlockedLevel', maxUnlockedLevel);
       }
+    }
+    // Save everything
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('maxUnlockedLevel', maxUnlockedLevel);
+    await prefs.setInt('coins', coins);
+    await prefs.setInt('challengeLives', challengeLives);
+    if (lastLivesReset != null) {
+      await prefs.setString(
+        'lastLivesReset',
+        lastLivesReset!.toIso8601String(),
+      );
+    }
+
+    await prefs.setInt('availableHints', availableHints);
+    if (lastHintReset != null) {
+      await prefs.setString('lastHintReset', lastHintReset!.toIso8601String());
     }
   }
 
@@ -83,6 +185,7 @@ class GameController extends ChangeNotifier {
     // Deep copy blocks so we don't mutate the level definition
     blocks = level.blocks.map((b) => b.copyWith()).toList();
     moves = 0;
+    moveCount = 0; // Reset contador de movimentos
     isLevelCompleted = false;
     // Set the primary block as active initially
     activeBlockId = blocks
@@ -96,10 +199,15 @@ class GameController extends ChangeNotifier {
     if (newX < 0 || newY < 0) return false;
 
     // Special case: Primary block can exit to the right
-    if (block.isPrimary && block.y == currentLevel.exitRow && newY == block.y) {
-      // Allow moving past the grid size
-      if (newX > currentLevel.columns) return false; // Hard limit 1 step past
+    if (block.isPrimary &&
+        block.y == currentLevel.exitRow &&
+        newX == block.x + 1) {
+      // Só permite avançar pra direita na saida
+      // Se o movimento for para "fora" (newX + width > columns), permitimos!
+      // Mas limitamos o quanto ele pode ir pra longe pra não sumir da tela.
+      if (newX > currentLevel.columns) return false; // Limite hard
     } else {
+      // Normal boundary check
       if (newX + block.width > currentLevel.columns) return false;
     }
 
@@ -144,20 +252,23 @@ class GameController extends ChangeNotifier {
     if (block.x == newX && block.y == newY) return true;
 
     // Check for collision-based transfer even if move is blocked
-    int dx = newX - block.x;
-    int dy = newY - block.y;
 
     if (canMove(block, newX, newY)) {
       blocks[index] = block.copyWith(x: newX, y: newY);
       moves++;
-
-      // Check if we touched another block (passing or sliding alongside)
-      String? touchedBlockId = _findTouchedBlock(blocks[index], dx, dy);
-      if (touchedBlockId != null) {
-        activeBlockId = touchedBlockId;
-      }
+      moveCount++; // Incrementar contador de movimentos
 
       _checkWin();
+
+      // Se moveu, limpar a dica
+      if (currentHintMove != null && blockId == currentHintMove!.blockId) {
+        currentHintMove = null;
+      }
+
+      // Feedback Sensorial
+      HapticFeedback.lightImpact();
+      audioController?.playMove();
+
       notifyListeners();
       return true;
     } else {
@@ -185,6 +296,7 @@ class GameController extends ChangeNotifier {
   }
 
   Future<void> _triggerShake(String blockId) async {
+    HapticFeedback.mediumImpact();
     shakingBlockId = blockId;
     notifyListeners();
     await Future.delayed(const Duration(milliseconds: 300));
@@ -194,60 +306,59 @@ class GameController extends ChangeNotifier {
     }
   }
 
-  // Find if the block is now adjacent to another block, BUT ONLY in the direction of movement
-  String? _findTouchedBlock(Block mover, int deltaX, int deltaY) {
-    // If moving UP (deltaY < 0)
-    if (deltaY < 0) {
-      return _findCollisionInRect(
-        mover.x,
-        mover.y - 1,
-        mover.width,
-        1,
-        mover.id,
-      );
-    }
-    // If moving DOWN (deltaY > 0)
-    if (deltaY > 0) {
-      return _findCollisionInRect(
-        mover.x,
-        mover.y + mover.height,
-        mover.width,
-        1,
-        mover.id,
-      );
-    }
-    // If moving LEFT (deltaX < 0)
-    if (deltaX < 0) {
-      return _findCollisionInRect(
-        mover.x - 1,
-        mover.y,
-        1,
-        mover.height,
-        mover.id,
-      );
-    }
-    // If moving RIGHT (deltaX > 0)
-    if (deltaX > 0) {
-      return _findCollisionInRect(
-        mover.x + mover.width,
-        mover.y,
-        1,
-        mover.height,
-        mover.id,
-      );
+  // === Sistema de Vidas ===
+
+  /// Verifica se precisa resetar vidas (novo dia)
+  void _checkDailyReset() {
+    if (lastLivesReset == null) {
+      _resetDailyLives();
+      return;
     }
 
-    return null;
+    final now = DateTime.now();
+    final lastReset = lastLivesReset!;
+
+    // Se mudou o dia, resetar vidas
+    if (now.year != lastReset.year ||
+        now.month != lastReset.month ||
+        now.day != lastReset.day) {
+      _resetDailyLives();
+    }
   }
 
-  String? _findCollisionInRect(int x, int y, int w, int h, String excludeId) {
-    for (var other in blocks) {
-      if (other.id == excludeId) continue;
-      if (_checkOverlap(x, y, w, h, other)) {
-        return other.id;
-      }
+  /// Reseta vidas para o máximo
+  void _resetDailyLives() {
+    challengeLives = maxLives;
+    lastLivesReset = DateTime.now();
+    _saveProgress();
+    notifyListeners();
+  }
+
+  /// Consome uma vida (modo desafio)
+  bool consumeLife() {
+    if (challengeLives > 0) {
+      challengeLives--;
+      _saveProgress();
+      notifyListeners();
+      return true;
     }
-    return null;
+    return false;
+  }
+
+  /// Define o modo de jogo
+  void setGameMode(GameMode mode) {
+    currentGameMode = mode;
+    notifyListeners();
+  }
+
+  void setActiveBlock(String? id) {
+    activeBlockId = id;
+    notifyListeners();
+  }
+
+  void clearActiveBlock() {
+    activeBlockId = null;
+    notifyListeners();
   }
 
   void _checkWin() {
@@ -255,20 +366,22 @@ class GameController extends ChangeNotifier {
       final primaryBlock = blocks.firstWhere((b) => b.isPrimary);
       // Win condition: Primary block reaches past the right edge
       // Assuming exit is always on the right side for now
-      if (primaryBlock.x >= currentLevel.columns - 1) {
-        // -1 to trigger as it starts exiting? Or fully out?
-        // User said "move for out of the square".
-        // If grid is 0..5 (size 6). Edge is 6.
-        // If x=4, w=2. x+w=6 (at edge).
-        // If x=5, w=2. x+w=7 (half out).
-        // If x=6, w=2. x+w=8 (fully out).
-        // Let's trigger when it's at least half out.
+      if (primaryBlock.x + primaryBlock.width > currentLevel.columns) {
+        if (primaryBlock.y == currentLevel.exitRow) {
+          isLevelCompleted = true;
 
-        if (primaryBlock.x + primaryBlock.width > currentLevel.columns) {
-          if (primaryBlock.y == currentLevel.exitRow) {
-            isLevelCompleted = true;
-            _saveProgress();
-          }
+          // Feedback
+          audioController?.playWin();
+          HapticFeedback.heavyImpact();
+
+          // Recompensa baseada no modo de jogo
+          final reward = currentGameMode == GameMode.challenge
+              ? challengeModeReward
+              : freeModeReward;
+          addCoins(reward);
+
+          _saveProgress();
+          notifyListeners();
         }
       }
     } catch (e) {
@@ -278,5 +391,128 @@ class GameController extends ChangeNotifier {
 
   void reset() {
     loadLevel(currentLevel);
+  }
+
+  void addCoins(int amount) {
+    coins += amount;
+    _saveProgress();
+    notifyListeners();
+  }
+
+  bool unlockNextLevel() {
+    if (coins >= unlockCost) {
+      coins -= unlockCost;
+      maxUnlockedLevel++;
+      _saveProgress();
+      notifyListeners();
+      return true;
+    }
+    return false;
+  }
+
+  // === Sistema de Hints ===
+
+  /// Verifica se precisa resetar hints (novo dia)
+  void _checkDailyHintReset() {
+    if (lastHintReset == null) {
+      _resetDailyHints();
+      return;
+    }
+
+    final now = DateTime.now();
+    final lastReset = lastHintReset!;
+
+    // Se mudou o dia, resetar hints
+    if (now.year != lastReset.year ||
+        now.month != lastReset.month ||
+        now.day != lastReset.day) {
+      _resetDailyHints();
+    }
+  }
+
+  /// Reseta hints para o máximo (apenas se for menor que o diário)
+  // Nota: Hints comprados podem acumular acima do diário,
+  // mas o reset gratuito só leva até maxDailyHints.
+  void _resetDailyHints() {
+    if (availableHints < maxDailyHints) {
+      availableHints = maxDailyHints;
+    }
+    lastHintReset = DateTime.now();
+    _saveProgress(); // Salva estado inicial
+  }
+
+  /// Consome uma dica
+  bool useHint() {
+    if (availableHints > 0) {
+      if (isCalculatingHint) return false;
+
+      availableHints--;
+      _saveProgress(); // Salvar consumo
+
+      _calculateHint();
+
+      notifyListeners();
+      return true;
+    }
+    return false;
+  }
+
+  Future<void> _calculateHint() async {
+    isCalculatingHint = true;
+    notifyListeners();
+
+    // Simular processamento (yield)
+    await Future.delayed(Duration.zero);
+
+    try {
+      // Criar nível temporário com estado ATUAL
+      final tempLevel = Level(
+        levelNumber: currentLevel.levelNumber,
+        blocks: List.of(blocks), // Cópia dos blocos atuais
+        rows: currentLevel.rows,
+        columns: currentLevel.columns,
+        exitRow: currentLevel.exitRow,
+        chapterIndex: currentLevel.chapterIndex,
+        levelInChapter: currentLevel.levelInChapter,
+      );
+
+      final solver = Solver(tempLevel);
+      // Limitar iterações para não travar UI
+      final solution = solver.solve(
+        maxIterations: 10000,
+      ); // 10k deve ser rápido o suficiente
+
+      if (solution != null && solution.isNotEmpty) {
+        currentHintMove = solution.first;
+        // debugPrint("Hint found: $currentHintMove");
+
+        // Auto-limpar após 5 segundos se não usado
+        Future.delayed(const Duration(seconds: 5), () {
+          if (currentHintMove != null) {
+            currentHintMove = null;
+            notifyListeners(); // Atualizar UI para remover destaque
+          }
+        });
+      } else {
+        debugPrint("No solution found by solver.");
+      }
+    } catch (e) {
+      debugPrint("Solver error: $e");
+    }
+
+    isCalculatingHint = false;
+    notifyListeners();
+  }
+
+  /// Compra dicas com moedas
+  bool buyHint() {
+    if (coins >= hintCost) {
+      coins -= hintCost;
+      availableHints++;
+      _saveProgress();
+      notifyListeners();
+      return true;
+    }
+    return false;
   }
 }

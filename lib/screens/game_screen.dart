@@ -12,152 +12,216 @@ class GameScreen extends StatefulWidget {
 }
 
 class _GameScreenState extends State<GameScreen> {
-  late GameController _controller;
   bool _dialogShown = false;
 
   @override
-  void initState() {
-    super.initState();
-    _controller = GameController();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    // Dark theme colors
-    const Color bgColor = Color(0xFF1E1E1E);
-    const Color textColor = Color(0xFFE0E0E0);
-    const Color accentColor = Color(0xFF8FBC8F);
+    final theme = Theme.of(context);
+    // Cores baseadas no tema
+    final textColor = theme.textTheme.displayLarge?.color ?? Colors.white;
+    final subtextColor = textColor.withValues(alpha: 0.7);
 
-    return ChangeNotifierProvider.value(
-      value: _controller,
-      child: Scaffold(
-        backgroundColor: bgColor,
-        body: SafeArea(
-          child: Consumer<GameController>(
-            builder: (context, controller, _) {
-              // Check win condition
-              if (controller.isLevelCompleted && !_dialogShown) {
-                _dialogShown = true;
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  _showWinDialog(context);
-                });
-              }
+    // Controller
+    final controller = Provider.of<GameController>(context);
 
-              return Column(
-                children: [
-                  const SizedBox(height: 24),
+    // Win Logic
+    if (controller.isLevelCompleted && !_dialogShown) {
+      _dialogShown = true;
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _showWinDialog(context),
+      );
+    }
+    if (!controller.isLevelCompleted) _dialogShown = false;
 
-                  // Menu Icon
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Icon(Icons.menu, color: textColor, size: 28),
-                    ),
+    // Font styles
+    final titleStyle =
+        theme.textTheme.displayLarge?.copyWith(
+          fontSize: 64, // Bem grande como na referência
+          fontWeight: FontWeight.w300,
+          height: 1.0,
+        ) ??
+        const TextStyle(fontSize: 64, fontWeight: FontWeight.w300);
+
+    final tutorialStyle = theme.textTheme.bodyLarge?.copyWith(
+      fontSize: 18,
+      color: subtextColor,
+      fontWeight: FontWeight.w400,
+    );
+
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 1. Menu Button (Top Left)
+              IconButton(
+                icon: const Icon(Icons.menu), // Icone hamburger
+                padding: EdgeInsets.zero,
+                alignment: Alignment.centerLeft,
+                iconSize: 28,
+                color: textColor,
+                onPressed: () => Navigator.pop(context),
+              ),
+
+              const SizedBox(height: 24),
+
+              // 2. Level Title "1-1"
+              Text(
+                '${controller.currentLevel.chapterIndex + 1}-${controller.currentLevel.levelInChapter}',
+                style: titleStyle,
+              ),
+
+              const SizedBox(height: 8),
+
+              // 3. Tutorial Text (se houver)
+              if (controller.currentLevel.tutorialText != null)
+                Text(
+                  controller.currentLevel.tutorialText!,
+                  style: tutorialStyle,
+                )
+              else
+                // Placeholder invisible para manter espaçamento se quiser, ou nada.
+                const SizedBox(height: 0),
+
+              const Spacer(), // Empurra o board para o centro/baixo relativo
+              // 4. Board
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 400),
+                  child: const AspectRatio(
+                    aspectRatio: 1,
+                    child: BoardWidget(),
                   ),
+                ),
+              ),
 
-                  const SizedBox(height: 16),
+              const Spacer(),
 
-                  // Level Number
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        '1-${controller.currentLevel.levelNumber}',
-                        style: TextStyle(
-                          color: textColor,
-                          fontSize: 32,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // Game Board (centered)
-                  Expanded(
-                    child: Center(
+              // 5. Footer Controls (Hint | Reset)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 24.0),
+                child: Row(
+                  children: [
+                    // Hint Button (Icon only style based on mock)
+                    InkWell(
+                      onTap: () => _handleHint(context, controller),
+                      borderRadius: BorderRadius.circular(8),
                       child: Padding(
-                        padding: const EdgeInsets.all(32.0),
-                        child: controller.allLevels.isEmpty
-                            ? const CircularProgressIndicator(
-                                color: accentColor,
-                              )
-                            : const AspectRatio(
-                                aspectRatio: 1,
-                                child: BoardWidget(),
-                              ),
+                        padding: const EdgeInsets.all(12.0),
+                        child: Icon(
+                          Icons.lightbulb_outline,
+                          color: controller.availableHints > 0
+                              ? textColor
+                              : textColor.withValues(alpha: 0.3),
+                          size: 28,
+                        ),
                       ),
                     ),
-                  ),
 
-                  // Bottom Controls
-                  Padding(
-                    padding: const EdgeInsets.only(
-                      bottom: 48.0,
-                      left: 32.0,
-                      right: 32.0,
+                    // Vertical Divider
+                    Container(
+                      height: 24,
+                      width: 1,
+                      color: subtextColor.withValues(alpha: 0.3),
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        // Hint Button
-                        Icon(
-                          Icons.lightbulb_outline,
-                          color: accentColor,
-                          size: 22,
-                        ),
 
-                        const SizedBox(width: 16),
-
-                        Container(
-                          width: 1,
-                          height: 20,
-                          color: Colors.grey[700],
-                        ),
-
-                        const SizedBox(width: 16),
-
-                        // Reset Button
-                        InkWell(
-                          onTap: () => _controller.reset(),
-                          child: Row(
-                            children: [
-                              Icon(Icons.refresh, color: accentColor, size: 20),
-                              const SizedBox(width: 6),
-                              Text(
-                                'Reset',
-                                style: TextStyle(
-                                  color: accentColor,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                    // Reset Button (Icon + Text)
+                    InkWell(
+                      onTap: () {
+                        _dialogShown = false;
+                        controller.reset();
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.refresh,
+                              color: theme.colorScheme.primary,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              "Reset",
+                              style: TextStyle(
+                                color: theme.colorScheme.primary,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                ],
-              );
-            },
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
+  void _handleHint(BuildContext context, GameController controller) {
+    if (controller.availableHints > 0) {
+      controller.useHint();
+    } else {
+      // Show dialog standard
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Need a Hint?'),
+          content: Text('Buy for 50 coins? (You have ${controller.coins})'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                if (controller.buyHint()) {
+                  Navigator.pop(context);
+                  controller.useHint();
+                } else {
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('Buy'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
   void _showWinDialog(BuildContext context) {
+    final controller = Provider.of<GameController>(context, listen: false);
     showDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black.withOpacity(0.8),
-      builder: (ctx) => CompletionDialog(
+      builder: (context) => CompletionDialog(
+        moveCount: controller.moveCount,
+        stars: controller.calculateStars(
+          controller.moveCount,
+          controller.currentLevel.optimalMoves,
+        ),
+        onReplay: () {
+          Navigator.pop(context);
+          controller.reset();
+        },
+        onMenu: () {
+          Navigator.pop(context);
+          Navigator.pop(context);
+        },
         onNextLevel: () {
-          Navigator.pop(ctx);
-          _dialogShown = false;
-          _controller.nextLevel();
+          Navigator.pop(context);
+          controller.nextLevel();
         },
       ),
     );

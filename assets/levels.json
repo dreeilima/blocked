@@ -1,401 +1,346 @@
-[
-  {
-    "id": 1,
-    "difficulty": "Tutorial",
-    "rows": 1,
-    "columns": 4,
-    "exitRow": 0,
-    "blocks": [
-      {
-        "id": "main",
-        "width": 1,
-        "height": 1,
-        "x": 0,
-        "y": 0,
-        "primary": true
-      }
-    ]
-  },
-  {
-    "id": 2,
-    "name": "1-2",
-    "gridSize": 3,
-    "exitRow": 0,
-    "blocks": [
-      {
-        "id": "main",
-        "width": 1,
-        "height": 1,
-        "x": 0,
-        "y": 0,
-        "primary": true
-      },
-      {
-        "id": "b1",
-        "width": 1,
-        "height": 1,
-        "x": 1,
-        "y": 0
-      },
-      {
-        "id": "big1",
-        "width": 2,
-        "height": 2,
-        "x": 1,
-        "y": 1
-      }
-    ]
-  },
-  {
-    "id": 3,
-    "name": "1-3",
-    "gridSize": 3,
-    "exitRow": 0,
-    "blocks": [
-      {
-        "id": "main",
-        "width": 1,
-        "height": 1,
-        "x": 0,
-        "y": 0,
-        "primary": true
-      },
-      {
-        "id": "b1",
-        "width": 1,
-        "height": 1,
-        "x": 1,
-        "y": 0
-      },
-      {
-        "id": "vertical1",
-        "width": 1,
-        "height": 2,
-        "x": 1,
-        "y": 1
-      },
-      {
-        "id": "vertical2",
-        "width": 1,
-        "height": 2,
-        "x": 2,
-        "y": 1
-      },
-      {
-        "id": "b2",
-        "width": 1,
-        "height": 1,
-        "x": 0,
-        "y": 2
-      }
-    ]
-  },
-  {
-    "id": 4,
-    "name": "1-4",
-    "gridSize": 3,
-    "exitRow": 0,
-    "blocks": [
-      {
-        "id": "main",
-        "width": 1,
-        "height": 1,
-        "x": 1,
-        "y": 0,
-        "primary": true
-      },
-      {
-        "id": "b1",
-        "width": 1,
-        "height": 1,
-        "x": 2,
-        "y": 0
-      },
-      {
-        "id": "big1",
-        "width": 2,
-        "height": 2,
-        "x": 0,
-        "y": 1
-      },
-      {
-        "id": "b2",
-        "width": 1,
-        "height": 1,
-        "x": 2,
-        "y": 1
-      }
-    ]
-  },
-  {
-    "id": 5,
-    "name": "1-5",
-    "gridSize": 3,
-    "exitRow": 0,
-    "blocks": [
-      {
-        "id": "main",
-        "width": 1,
-        "height": 1,
-        "x": 0,
-        "y": 0,
-        "primary": true
-      },
-      {
-        "id": "b1",
-        "width": 1,
-        "height": 1,
-        "x": 1,
-        "y": 0
-      },
-      {
-        "id": "b2",
-        "width": 1,
-        "height": 1,
-        "x": 2,
-        "y": 0
-      },
-      {
-        "id": "b3",
-        "width": 1,
-        "height": 1,
-        "x": 0,
-        "y": 1
-      },
-      {
-        "id": "b4",
-        "width": 1,
-        "height": 1,
-        "x": 2,
-        "y": 1
-      },
-      {
-        "id": "b5",
-        "width": 1,
-        "height": 1,
-        "x": 0,
-        "y": 2
-      },
-      {
-        "id": "b6",
-        "width": 1,
-        "height": 1,
-        "x": 1,
-        "y": 2
-      },
-      {
-        "id": "b7",
-        "width": 1,
-        "height": 1,
-        "x": 2,
-        "y": 2
-      }
-    ]
-  },
-  {
-    "id": 6,
-    "name": "1-6",
-    "gridSize": 3,
-    "exitRow": 0,
-    "blocks": [
-      {
-        "id": "main",
-        "width": 1,
-        "height": 2,
-        "x": 0,
-        "y": 0,
-        "primary": true
-      },
-      {
-        "id": "b1",
-        "width": 1,
-        "height": 1,
-        "x": 1,
-        "y": 0
-      },
-      {
-        "id": "b2",
-        "width": 1,
-        "height": 1,
-        "x": 2,
-        "y": 0
-      },
-      {
-        "id": "big1",
-        "width": 2,
-        "height": 2,
-        "x": 1,
-        "y": 1
-      }
-    ]
-  },
-  {
-    "id": 7,
-    "name": "1-7",
-    "gridSize": 3,
-    "exitRow": 0,
-    "blocks": [
-      {
-        "id": "main",
-        "width": 1,
-        "height": 2,
-        "x": 0,
-        "y": 0,
-        "primary": true
-      },
-      {
-        "id": "big1",
-        "width": 2,
-        "height": 2,
-        "x": 1,
-        "y": 0
-      },
-      {
-        "id": "b1",
-        "width": 1,
-        "height": 1,
-        "x": 1,
-        "y": 2
-      },
-      {
-        "id": "b2",
-        "width": 1,
-        "height": 1,
-        "x": 2,
-        "y": 2
-      }
-    ]
-  },
-  {
-    "id": 8,
-    "name": "1-8",
-    "gridSize": 3,
-    "exitRow": 2,
-    "blocks": [
-      {
-        "id": "main",
-        "width": 1,
-        "height": 2,
-        "x": 0,
-        "y": 1,
-        "primary": true
-      },
-      {
-        "id": "b1",
-        "width": 2,
-        "height": 1,
-        "x": 1,
-        "y": 0
-      },
-      {
-        "id": "big1",
-        "width": 2,
-        "height": 2,
-        "x": 1,
-        "y": 1
-      }
-    ]
-  },
-  {
-    "id": 9,
-    "name": "1-9",
-    "gridSize": 3,
-    "exitRow": 0,
-    "blocks": [
-      {
-        "id": "main",
-        "width": 1,
-        "height": 1,
-        "x": 0,
-        "y": 0,
-        "primary": true
-      },
-      {
-        "id": "vertical1",
-        "width": 1,
-        "height": 2,
-        "x": 1,
-        "y": 0
-      },
-      {
-        "id": "vertical2",
-        "width": 1,
-        "height": 2,
-        "x": 2,
-        "y": 1
-      },
-      {
-        "id": "b1",
-        "width": 1,
-        "height": 1,
-        "x": 0,
-        "y": 1
-      },
-      {
-        "id": "b2",
-        "width": 1,
-        "height": 1,
-        "x": 0,
-        "y": 2
-      },
-      {
-        "id": "b3",
-        "width": 1,
-        "height": 1,
-        "x": 1,
-        "y": 2
-      }
-    ]
-  },
-  {
-    "id": 10,
-    "name": "1-10",
-    "gridSize": 3,
-    "exitRow": 0,
-    "blocks": [
-      {
-        "id": "main",
-        "width": 2,
-        "height": 1,
-        "x": 0,
-        "y": 0,
-        "primary": true
-      },
-      {
-        "id": "b1",
-        "width": 1,
-        "height": 1,
-        "x": 2,
-        "y": 0
-      },
-      {
-        "id": "b2",
-        "width": 1,
-        "height": 1,
-        "x": 0,
-        "y": 1
-      },
-      {
-        "id": "b3",
-        "width": 1,
-        "height": 1,
-        "x": 1,
-        "y": 1
-      },
-      {
-        "id": "big1",
-        "width": 2,
-        "height": 1,
-        "x": 0,
-        "y": 2
-      },
-      {
-        "id": "big2",
-        "width": 1,
-        "height": 2,
-        "x": 2,
-        "y": 1
-      }
-    ]
-  }
-]
+{
+  "levels": [
+    {
+      "id": 1,
+      "chapterIndex": 0,
+      "levelInChapter": 1,
+      "gridSize": 6,
+      "exitRow": 2,
+      "optimalMoves": 1,
+      "tutorialText": "Drag the block to the exit.",
+      "blocks": [
+        {
+          "id": "main",
+          "width": 2,
+          "height": 1,
+          "x": 1,
+          "y": 2,
+          "isPrimary": true
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "chapterIndex": 0,
+      "levelInChapter": 2,
+      "gridSize": 6,
+      "exitRow": 2,
+      "optimalMoves": 6,
+      "tutorialText": "Knock into blocks to transfer control.",
+      "blocks": [
+        {
+          "id": "main",
+          "width": 2,
+          "height": 1,
+          "x": 0,
+          "y": 2,
+          "isPrimary": true
+        },
+        {
+          "id": "v1",
+          "width": 1,
+          "height": 3,
+          "x": 2,
+          "y": 1
+        },
+        {
+          "id": "h1",
+          "width": 2,
+          "height": 1,
+          "x": 3,
+          "y": 3
+        },
+        {
+          "id": "v2",
+          "width": 1,
+          "height": 2,
+          "x": 4,
+          "y": 0
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "chapterIndex": 0,
+      "levelInChapter": 3,
+      "gridSize": 6,
+      "exitRow": 2,
+      "optimalMoves": 8,
+      "blocks": [
+        {
+          "id": "main",
+          "width": 2,
+          "height": 1,
+          "x": 0,
+          "y": 2,
+          "isPrimary": true
+        },
+        {
+          "id": "v1",
+          "width": 1,
+          "height": 3,
+          "x": 2,
+          "y": 0
+        },
+        {
+          "id": "v2",
+          "width": 1,
+          "height": 2,
+          "x": 3,
+          "y": 3
+        },
+        {
+          "id": "h1",
+          "width": 2,
+          "height": 1,
+          "x": 4,
+          "y": 2
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "chapterIndex": 0,
+      "levelInChapter": 4,
+      "gridSize": 6,
+      "exitRow": 2,
+      "optimalMoves": 10,
+      "blocks": [
+        {
+          "id": "main",
+          "width": 2,
+          "height": 1,
+          "x": 0,
+          "y": 2,
+          "isPrimary": true
+        },
+        {
+          "id": "v1",
+          "width": 1,
+          "height": 2,
+          "x": 2,
+          "y": 2
+        },
+        {
+          "id": "h1",
+          "width": 2,
+          "height": 1,
+          "x": 2,
+          "y": 4
+        },
+        {
+          "id": "h2",
+          "width": 3,
+          "height": 1,
+          "x": 3,
+          "y": 0
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "chapterIndex": 0,
+      "levelInChapter": 5,
+      "gridSize": 6,
+      "exitRow": 2,
+      "optimalMoves": 12,
+      "blocks": [
+        {
+          "id": "main",
+          "width": 2,
+          "height": 1,
+          "x": 1,
+          "y": 2,
+          "isPrimary": true
+        },
+        {
+          "id": "v1",
+          "width": 1,
+          "height": 3,
+          "x": 3,
+          "y": 0
+        },
+        {
+          "id": "h1",
+          "width": 2,
+          "height": 1,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "id": "h2",
+          "width": 2,
+          "height": 1,
+          "x": 4,
+          "y": 3
+        },
+        {
+          "id": "v2",
+          "width": 1,
+          "height": 2,
+          "x": 0,
+          "y": 3
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "chapterIndex": 0,
+      "levelInChapter": 6,
+      "gridSize": 6,
+      "exitRow": 2,
+      "optimalMoves": 15,
+      "blocks": [
+        {
+          "id": "main",
+          "width": 2,
+          "height": 1,
+          "x": 0,
+          "y": 2,
+          "isPrimary": true
+        },
+        {
+          "id": "v1",
+          "width": 1,
+          "height": 2,
+          "x": 2,
+          "y": 2
+        },
+        {
+          "id": "v2",
+          "width": 1,
+          "height": 2,
+          "x": 3,
+          "y": 2
+        },
+        {
+          "id": "h1",
+          "width": 2,
+          "height": 1,
+          "x": 2,
+          "y": 4
+        },
+        {
+          "id": "v3",
+          "width": 1,
+          "height": 2,
+          "x": 4,
+          "y": 0
+        },
+        {
+          "id": "h2",
+          "width": 2,
+          "height": 1,
+          "x": 0,
+          "y": 4
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "chapterIndex": 1,
+      "levelInChapter": 1,
+      "gridSize": 6,
+      "exitRow": 2,
+      "optimalMoves": 14,
+      "blocks": [
+        {
+          "id": "main",
+          "width": 2,
+          "height": 1,
+          "x": 1,
+          "y": 2,
+          "isPrimary": true
+        },
+        {
+          "id": "v1",
+          "width": 1,
+          "height": 3,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "id": "h1",
+          "width": 2,
+          "height": 1,
+          "x": 1,
+          "y": 0
+        },
+        {
+          "id": "v2",
+          "width": 1,
+          "height": 2,
+          "x": 3,
+          "y": 0
+        },
+        {
+          "id": "v3",
+          "width": 1,
+          "height": 2,
+          "x": 3,
+          "y": 3
+        },
+        {
+          "id": "h2",
+          "width": 2,
+          "height": 1,
+          "x": 4,
+          "y": 2
+        },
+        {
+          "id": "v4",
+          "width": 1,
+          "height": 2,
+          "x": 5,
+          "y": 3
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "chapterIndex": 1,
+      "levelInChapter": 2,
+      "gridSize": 6,
+      "exitRow": 2,
+      "optimalMoves": 16,
+      "blocks": [
+        {
+          "id": "main",
+          "width": 2,
+          "height": 1,
+          "x": 0,
+          "y": 2,
+          "isPrimary": true
+        },
+        {
+          "id": "v1",
+          "width": 1,
+          "height": 2,
+          "x": 2,
+          "y": 2
+        },
+        {
+          "id": "h1",
+          "width": 3,
+          "height": 1,
+          "x": 0,
+          "y": 4
+        },
+        {
+          "id": "v2",
+          "width": 1,
+          "height": 3,
+          "x": 3,
+          "y": 0
+        },
+        {
+          "id": "h2",
+          "width": 2,
+          "height": 1,
+          "x": 4,
+          "y": 3
+        }
+      ]
+    }
+  ]
+}
