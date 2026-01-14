@@ -25,7 +25,7 @@ class _MainMenuBackgroundState extends State<MainMenuBackground>
   @override
   void initState() {
     super.initState();
-    _demoController = GameController();
+    _demoController = GameController(isDemo: true);
 
     _rotationController = AnimationController(
       vsync: this,

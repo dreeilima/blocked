@@ -57,10 +57,10 @@ class _BlockWidgetState extends State<BlockWidget>
           CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
         );
 
-    // Shake animation for collision
+    // Shake animation for collision - mais suave
     _shakeController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300), // Faster shake
+      duration: const Duration(milliseconds: 400), // Mais lento = mais suave
     );
   }
 
@@ -89,6 +89,12 @@ class _BlockWidgetState extends State<BlockWidget>
   @override
   Widget build(BuildContext context) {
     final gameColors = ThemeProvider.getGameColors(context);
+
+    // IMPORTANTE: Paredes não devem ser renderizadas como blocos visíveis
+    // Elas são apenas limites do tabuleiro
+    if (widget.block.isWall) {
+      return const SizedBox.shrink(); // Não renderiza nada para paredes
+    }
 
     // Determine colors based on state
     // Primary block is always green-ish.
@@ -132,10 +138,12 @@ class _BlockWidgetState extends State<BlockWidget>
           // Calculate shake offset based on sine wave using controller value
           double offsetX = 0;
           if (_shakeController.isAnimating) {
-            const double shakeAmount = 6.0;
+            const double shakeAmount = 3.0; // Reduzido para efeito mais suave
             // Simple back-and-forth shake
             // _shakeController.value goes 0->1. We want a few sine waves.
-            offsetX = shakeAmount * sin(_shakeController.value * 6 * pi);
+            offsetX =
+                shakeAmount *
+                sin(_shakeController.value * 4 * pi); // Menos oscilações
           }
 
           return Transform.translate(
@@ -145,39 +153,33 @@ class _BlockWidgetState extends State<BlockWidget>
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          margin: const EdgeInsets.all(4.0), // gutter spacing between blocks
+          margin: const EdgeInsets.all(2.0), // Espaçamento maior entre blocos
           decoration: BoxDecoration(
             color: blockColor,
-            borderRadius: BorderRadius.circular(8.0), // slightly rounder
+            borderRadius: BorderRadius.circular(
+              2.0,
+            ), // Cantos mais afiados como original
             border: Border.all(
               color: borderColor,
-              width: widget.isActive ? 3.0 : 2.0,
+              width: 2.0, // Borda 2px como original
             ),
-            boxShadow: widget.isActive
-                ? [
-                    BoxShadow(
-                      color: gameColors.activeBlockBorder.withValues(
-                        alpha: 0.3,
-                      ),
-                      blurRadius: 8,
-                      spreadRadius: 1,
-                    ),
-                  ]
-                : [],
           ),
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // Círculo do bloco primário
+              // Círculo do bloco primário - SEMPRE VISÍVEL
               if (widget.block.isPrimary)
                 Container(
-                  width: widget.tileSize * 0.35,
-                  height: widget.tileSize * 0.35,
+                  width: widget.tileSize * 0.4,
+                  height: widget.tileSize * 0.4,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
+                    color: gameColors.primaryCircle.withOpacity(
+                      0.3,
+                    ), // Fundo translúcido
                     border: Border.all(
                       color: gameColors.primaryCircle,
-                      width: 2.5,
+                      width: 3.0, // Borda mais grossa
                     ),
                   ),
                 ),

@@ -3,6 +3,7 @@ class Block {
   final int width;
   final int height;
   final bool isPrimary;
+  final bool isWall;
   final int x;
   final int y;
 
@@ -13,17 +14,19 @@ class Block {
     required this.x,
     required this.y,
     this.isPrimary = false,
+    this.isWall = false,
   });
 
   // Helper to copy with new position
-  Block copyWith({int? x, int? y}) {
+  Block copyWith({int? x, int? y, bool? isPrimary, bool? isWall}) {
     return Block(
       id: id,
       width: width,
       height: height,
       x: x ?? this.x,
       y: y ?? this.y,
-      isPrimary: isPrimary,
+      isPrimary: isPrimary ?? this.isPrimary,
+      isWall: isWall ?? this.isWall,
     );
   }
 
@@ -55,6 +58,7 @@ class Block {
       x: json['x'] as int,
       y: json['y'] as int,
       isPrimary: json['primary'] == true,
+      isWall: json['isWall'] == true,
     );
   }
 

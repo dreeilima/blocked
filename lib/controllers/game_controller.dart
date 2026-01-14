@@ -83,15 +83,26 @@ class GameController extends ChangeNotifier {
   // Dependência de Áudio
   AudioController? audioController;
 
-  GameController() {
+  final bool isDemo;
+
+  GameController({this.isDemo = false}) {
     _init();
   }
 
   Future<void> _init() async {
     await loadLevels();
-    await _loadProgress();
-    // Always start at level 1 (index 0)
-    loadLevelIndex(0);
+    if (!isDemo) {
+      await _loadProgress();
+    } else {
+      // Demo carrega niveis, mas não lê progresso do user
+    }
+
+    // Se não for demo e tivermos um nível salvo, carregar ele
+    if (!isDemo && _savedLevelIndex != -1) {
+      loadLevelIndex(_savedLevelIndex);
+    } else {
+      loadLevelIndex(0);
+    }
   }
 
   Future<void> loadLevels() async {
@@ -115,10 +126,13 @@ class GameController extends ChangeNotifier {
     }
   }
 
+  int _savedLevelIndex = -1;
+
   Future<void> _loadProgress() async {
     final prefs = await SharedPreferences.getInstance();
     maxUnlockedLevel = prefs.getInt('maxUnlockedLevel') ?? 1;
     coins = prefs.getInt('coins') ?? 0;
+    _savedLevelIndex = prefs.getInt('lastPlayedLevelIndex') ?? 0;
 
     // Carregar vidas e verificar reset diário
     challengeLives = prefs.getInt('challengeLives') ?? maxLives;
@@ -143,6 +157,8 @@ class GameController extends ChangeNotifier {
   }
 
   Future<void> _saveProgress() async {
+    if (isDemo) return; // Não salvar nada se for demo
+
     if (currentLevel.levelNumber >= maxUnlockedLevel) {
       // If we just beat the latest level, unlock the next one
       int nextLevelId = currentLevel.levelNumber + 1;
@@ -153,6 +169,7 @@ class GameController extends ChangeNotifier {
     // Save everything
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('maxUnlockedLevel', maxUnlockedLevel);
+    await prefs.setInt('lastPlayedLevelIndex', currentLevelIndex);
     await prefs.setInt('coins', coins);
     await prefs.setInt('challengeLives', challengeLives);
     if (lastLivesReset != null) {
@@ -172,6 +189,10 @@ class GameController extends ChangeNotifier {
     if (index < 0 || index >= allLevels.length) return;
     currentLevelIndex = index;
     loadLevel(allLevels[index]);
+    // Salvar que carregamos este nível (se não for demo)
+    if (!isDemo) {
+      _saveProgress();
+    }
   }
 
   void nextLevel() {
@@ -199,13 +220,11 @@ class GameController extends ChangeNotifier {
     if (newX < 0 || newY < 0) return false;
 
     // Special case: Primary block can exit to the right
-    if (block.isPrimary &&
-        block.y == currentLevel.exitRow &&
-        newX == block.x + 1) {
-      // Só permite avançar pra direita na saida
-      // Se o movimento for para "fora" (newX + width > columns), permitimos!
-      // Mas limitamos o quanto ele pode ir pra longe pra não sumir da tela.
-      if (newX > currentLevel.columns) return false; // Limite hard
+    if (block.isPrimary && block.y == currentLevel.exitRow && newX >= block.x) {
+      // Movendo para direita
+      // Permite sair completamente do tabuleiro
+      // Limite: pode ir até columns + width (para sair totalmente)
+      if (newX > currentLevel.columns + block.width) return false;
     } else {
       // Normal boundary check
       if (newX + block.width > currentLevel.columns) return false;
@@ -284,9 +303,17 @@ class GameController extends ChangeNotifier {
         if (other.id == blockId) continue;
         // If the target position overlaps with 'other', we hit it
         if (_checkOverlap(newX, newY, block.width, block.height, other)) {
-          // We hit 'other'. Transfer control!
-          activeBlockId = other.id;
-          _triggerShake(blockId); // Shake the one that hit
+          _triggerShake(blockId); // Shake the one that hit (always)
+
+          // Só transfere controle se NÃO for parede
+          if (!other.isWall) {
+            // We hit a movable block. Transfer control!
+            activeBlockId = other.id;
+          } else {
+            // Hit a wall. Just sound effect maybe?
+            HapticFeedback.heavyImpact();
+          }
+
           notifyListeners();
           return false; // Move failed, but state changed
         }
@@ -363,10 +390,13 @@ class GameController extends ChangeNotifier {
 
   void _checkWin() {
     try {
-      final primaryBlock = blocks.firstWhere((b) => b.isPrimary);
-      // Win condition: Primary block reaches past the right edge
-      // Assuming exit is always on the right side for now
-      if (primaryBlock.x + primaryBlock.width > currentLevel.columns) {
+      final primaryBlock = blocks.firstWhere(
+        (b) => b.isPrimary,
+        orElse: () => throw StateError('No primary block found'),
+      );
+      // Win condition: Primary block reaches the exit column
+      // Simplificado: ganha quando o bloco chega na última coluna da saída
+      if (primaryBlock.x + primaryBlock.width >= currentLevel.columns) {
         if (primaryBlock.y == currentLevel.exitRow) {
           isLevelCompleted = true;
 
@@ -384,8 +414,10 @@ class GameController extends ChangeNotifier {
           notifyListeners();
         }
       }
+    } on StateError catch (e) {
+      debugPrint('No primary block in level ${currentLevel.levelNumber}: $e');
     } catch (e) {
-      // No primary block?
+      debugPrint('Error in _checkWin: $e');
     }
   }
 

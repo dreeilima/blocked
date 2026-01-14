@@ -23,8 +23,9 @@ class BoardWidget extends StatelessWidget {
         child: Center(
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final double borderWidth = 10.0;
-              final double internalPadding = 8.0;
+              final double borderWidth = 4.0; // Borda mais fina como original
+              final double internalPadding =
+                  0.0; // Sem padding interno como original
               final double totalPadding = (borderWidth + internalPadding) * 2;
 
               // Calculate max available size for content

@@ -48,8 +48,9 @@ class Level {
 
     // Leitura do nível no capítulo (fallback para id)
     int lvlInChap = json['id'] as int;
-    if (json.containsKey('levelInChapter'))
+    if (json.containsKey('levelInChapter')) {
       lvlInChap = json['levelInChapter'] as int;
+    }
 
     return Level(
       levelNumber: json['id'] as int,
